@@ -135,7 +135,7 @@ void EncryptSingleFile(const std::wstring& path, const std::wstring& name)
 	long long fileSize = myfile.tellg();
 
 	// Check file size value
-	if (fileSize < 1 || fileSize > 1024 * 1024 * 1024)
+	if (fileSize < 1 || fileSize >= 1024 * 1024 * 1024)
 	{
 		return;
 	}
