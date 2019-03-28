@@ -115,7 +115,6 @@ bool ReadRegistryStruct(const std::wstring& lpzSection, const std::wstring& lpzK
 
 	if (FAILED(hr))
 	{
-		MessageBox(hwDlg, L"0", L"0", MB_OKCANCEL);
 		return false;
 	}
 
@@ -123,7 +122,6 @@ bool ReadRegistryStruct(const std::wstring& lpzSection, const std::wstring& lpzK
 	hr = RegQueryValueEx(hKey, lpzKey.c_str(), 0, 0, 0, &DataSize);
 	if (DataSize > uSizeStruct)
 	{
-		MessageBox(hwDlg, L"1", L"1", MB_OKCANCEL);
 		return false;
 	}
 
@@ -131,7 +129,6 @@ bool ReadRegistryStruct(const std::wstring& lpzSection, const std::wstring& lpzK
 
 	if (FAILED(hr) || !DataSize)
 	{
-		MessageBox(hwDlg, L"2", L"2", MB_OKCANCEL);
 		return false;
 	}
 

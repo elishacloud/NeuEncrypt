@@ -4,7 +4,7 @@ NeuEncrypt is a lightweight tool that allows you to encrypt all files on a parti
 
 ### Installation
 
-No installation is needed.  Just run the tool and browse to the folder you want to encrypt.  Then press 'Encrypt' to encrypt the files in that folder.  To unencrypt the files press the 'Decrypt' button.
+No installation is needed.  Download the tool from the [release](https://github.com/elishacloud/NeuEncrypt/releases) page.  Then run the tool and browse to the folder you want to encrypt.  Press 'Encrypt' to encrypt the files in that folder.  To unencrypt the files press the 'Decrypt' button.
 
 ### Uninstallation
 
