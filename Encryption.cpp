@@ -67,18 +67,17 @@ void ReadDirectory(const std::wstring& name, const std::wstring& ext, wstringvec
 	std::wstring pattern(name + L"\\*" + ext);
 
 	WIN32_FIND_DATA data;
-	HANDLE hFind;
+	HANDLE hFind = FindFirstFile(pattern.c_str(), &data);
 
-	if ((hFind = FindFirstFile(pattern.c_str(), &data)) != INVALID_HANDLE_VALUE)
+	if (hFind != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
-			if (data.cFileName[0] != L'.' &&
-				wcscmp(data.cFileName, processName) != 0)
+			if ((data.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM)) == 0)
 			{
 				v.push_back(data.cFileName);
 			}
-		} while (FindNextFile(hFind, &data) != 0);
+		} while (FindNextFile(hFind, &data));
 
 		FindClose(hFind);
 	}
