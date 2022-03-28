@@ -23,12 +23,12 @@
 // Main resource file details
 #define APP_NAME				"NeuEncrypt"
 #define APP_MAJOR				1
-#define APP_MINOR				0
+#define APP_MINOR				1
 #define APP_BUILDNUMBER			0
 #define APP_REVISION			0
 #define APP_COMPANYNAME			"NeuShield Inc."
 #define APP_DESCRPTION			"Simulates ransomware encrypting a folder."
-#define APP_COPYRIGHT			"Copyright (C) 2019 NeuShield Inc."
+#define APP_COPYRIGHT			"Copyright (C) 2022 NeuShield Inc."
 #define APP_ORIGINALVERSION		"NeuEncrypt.exe"
 #define APP_INTERNALNAME		"NeuEncrypt"
 

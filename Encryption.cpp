@@ -1,5 +1,5 @@
 /**
-* Copyright (C) 2019 NeuShield Inc.
+* Copyright (C) 2022 NeuShield Inc.
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
 * authors be held liable for any damages arising from the use of this software.
@@ -22,6 +22,7 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <shlwapi.h>
 #include "NeuEncrypt.h"
 #include "Encryption.h"
 
@@ -64,7 +65,7 @@ bool IsFileExist(const wchar_t *fileName)
 
 void ReadDirectory(const std::wstring& name, const std::wstring& ext, wstringvec& v)
 {
-	std::wstring pattern(name + L"\\*" + ext);
+	std::wstring pattern(name + L"\\*");
 
 	WIN32_FIND_DATA data;
 	HANDLE hFind = FindFirstFile(pattern.c_str(), &data);
@@ -75,7 +76,28 @@ void ReadDirectory(const std::wstring& name, const std::wstring& ext, wstringvec
 		{
 			if ((data.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM)) == 0)
 			{
-				v.push_back(data.cFileName);
+				WCHAR combinedPath[MAX_PATH] = { 0 };
+
+				if (PathCombine(combinedPath, name.c_str(), data.cFileName))
+				{
+					if (ext.empty() || wcscmp(PathFindExtension(data.cFileName), ext.c_str()) == 0)
+					{
+						v.push_back(combinedPath);
+					}
+				}
+			}
+			else if ((data.cFileName[0] == L'.' && data.cFileName[1] == L'\0') || (data.cFileName[0] == L'.' && data.cFileName[1] == L'.' && data.cFileName[2] == L'\0'))
+			{
+				continue;
+			}
+			else if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && ((data.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) == 0))
+			{
+				WCHAR combinedPath[MAX_PATH] = { 0 };
+
+				if (PathCombine(combinedPath, name.c_str(), data.cFileName))
+				{
+					ReadDirectory(combinedPath, ext, v);
+				}
 			}
 		} while (FindNextFile(hFind, &data));
 
@@ -193,9 +215,9 @@ void EncryptFiles()
 		std::wstring encryptName(originalName + encryptExt);
 
 		// Rename and encrypt file
-		RenameFile(encryptPath, originalName.c_str(), tempName.c_str());
-		EncryptSingleFile(encryptPath, tempName.c_str());
-		RenameFile(encryptPath, tempName.c_str(), encryptName.c_str());
+		RenameFile(LR"(\\?)", originalName.c_str(), tempName.c_str());
+		EncryptSingleFile(LR"(\\?)", tempName.c_str());
+		RenameFile(LR"(\\?)", tempName.c_str(), encryptName.c_str());
 	}
 
 	// Update GUI buttons
@@ -220,9 +242,9 @@ void DecryptFiles()
 		std::wstring encryptName(originalName + encryptExt);
 
 		// Rename and encrypt file
-		RenameFile(encryptPath, encryptName.c_str(), tempName.c_str());
-		EncryptSingleFile(encryptPath, tempName.c_str());
-		RenameFile(encryptPath, tempName.c_str(), originalName.c_str());
+		RenameFile(LR"(\\?)", encryptName.c_str(), tempName.c_str());
+		EncryptSingleFile(LR"(\\?)", tempName.c_str());
+		RenameFile(LR"(\\?)", tempName.c_str(), originalName.c_str());
 	}
 
 	// Update GUI buttons

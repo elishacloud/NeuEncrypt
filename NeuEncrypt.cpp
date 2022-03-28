@@ -1,5 +1,5 @@
 /**
-* Copyright (C) 2019 NeuShield Inc.
+* Copyright (C) 2022 NeuShield Inc.
 *
 * This software is  provided 'as-is', without any express  or implied  warranty. In no event will the
 * authors be held liable for any damages arising from the use of this software.
@@ -241,7 +241,6 @@ void OpenDialog()
 	if (folder_name)
 	{
 		UpdateEncryptFolder(folder_name);
-		SetEncryptFolderText();
 		SetButtonStatus();
 		CoTaskMemFree(folder_name);
 		folder_name = nullptr;
@@ -258,9 +257,9 @@ void InitDialog()
 		SendMessage(hwDlg, WM_SETICON, ICON_SMALL, (LPARAM)hCustomIcon);
 	}
 	CenterWindow(hwDlg);
+	LoadSettings();
 	SetButtonStatus();
 	SetEncryptFolderText();
-	LoadSettings();
 }
 
 // Message handler for about box.
