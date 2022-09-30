@@ -51,10 +51,9 @@ const wchar_t *GetEncryptFolder()
 	return encryptPath;
 }
 
-void UpdateEncryptFolder(const wchar_t *path)
+void SetEncryptFolder(const wchar_t *path)
 {
 	wcscpy_s(encryptPath, path);
-	SetEncryptFolderText();
 }
 
 bool IsFileExist(const wchar_t *fileName)
@@ -195,11 +194,6 @@ void EncryptSingleFile(const std::wstring& path, const std::wstring& name)
 
 void EncryptFiles()
 {
-	if (MessageBox(hwDlg, std::wstring(L"This will encrypt folder '" + std::wstring(encryptPath) + L"'.\n\nAre you sure you want to encrypt this folder?").c_str(), L"NeuEncrypt Confirmation", MB_OKCANCEL) != IDOK)
-	{
-		return;
-	}
-
 	const wchar_t tempExt[] = { L".encrypting\0" };
 
 	// Read all files in a folder
@@ -219,9 +213,6 @@ void EncryptFiles()
 		EncryptSingleFile(LR"(\\?)", tempName.c_str());
 		RenameFile(LR"(\\?)", tempName.c_str(), encryptName.c_str());
 	}
-
-	// Update GUI buttons
-	SetButtonStatus();
 }
 
 void DecryptFiles()
@@ -246,7 +237,4 @@ void DecryptFiles()
 		EncryptSingleFile(LR"(\\?)", tempName.c_str());
 		RenameFile(LR"(\\?)", tempName.c_str(), originalName.c_str());
 	}
-
-	// Update GUI buttons
-	SetButtonStatus();
 }

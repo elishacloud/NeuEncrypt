@@ -2,7 +2,7 @@
 
 void InitEncrypt();
 const wchar_t *GetEncryptFolder();
-void UpdateEncryptFolder(const wchar_t *path);
+void SetEncryptFolder(const wchar_t *path);
 bool CheckIfEncrypted();
 void EncryptFiles();
 void DecryptFiles();

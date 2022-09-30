@@ -23,7 +23,7 @@
 // Main resource file details
 #define APP_NAME				"NeuEncrypt"
 #define APP_MAJOR				1
-#define APP_MINOR				1
+#define APP_MINOR				2
 #define APP_BUILDNUMBER			0
 #define APP_REVISION			0
 #define APP_COMPANYNAME			"NeuShield Inc."
@@ -36,6 +36,13 @@
 #define _TO_STRING_(x) #x
 #define _TO_STRING(x) _TO_STRING_(x)
 #define APP_VERSION _TO_STRING(APP_MAJOR) "." _TO_STRING(APP_MINOR) "." _TO_STRING(APP_BUILDNUMBER) "." _TO_STRING(APP_REVISION)
+
+// Get APP_VERSION_STRING
+#define APP_DOT .
+#define APP_STRING NeuEncrypt, Version v
+#define _PPCAT_NX(A, B, C, D) A ## B ## D ## C
+#define _PPCAT(A, B, C, D) _PPCAT_NX(A, B, C, D)
+#define APP_VERSION_STRING _TO_STRING(_PPCAT(APP_STRING,APP_MAJOR,APP_MINOR,APP_DOT))
 
 // Next default values for new objects
 // 

@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include <atlbase.h>
 #include <shobjidl.h>
+#include <shellapi.h>
 #include <string>
 #include "Encryption.h"
 #include "NeuEncrypt.h"
@@ -29,8 +30,13 @@ HWND hwDlg;										// current dialog handle
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
+bool RunSilently = false;
+wchar_t OverridePath[MAX_PATH] = {};
+
 // Forward declarations of functions included in this code module:
 INT_PTR CALLBACK    NeuBox(HWND, UINT, WPARAM, LPARAM);
+void GetArgumentOptions(LPCWSTR lpCmdLine);
+void SetEncryptFolderText();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -38,7 +44,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
+	UNREFERENCED_PARAMETER(nCmdShow);
+
+	// Get command line arguments
+	GetArgumentOptions(lpCmdLine);
+
+	// Check if running silently
+	if (RunSilently)
+	{
+		if (wcslen(OverridePath))
+		{
+			// Set folder to encrypt
+			SetEncryptFolder(OverridePath);
+			// Do encrypt
+			EncryptFiles();
+			// return
+			return TRUE;
+		}
+		return FALSE;
+	}
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -49,6 +73,32 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	DialogBox(hInstance, MAKEINTRESOURCE(IDD_NEUBOX), nullptr, NeuBox);
 
     return TRUE;
+}
+
+void GetArgumentOptions(LPCWSTR lpCmdLine)
+{
+	// Retrieve command line arguments
+	LPWSTR* szArgList;
+	int argCount;
+	szArgList = CommandLineToArgvW(lpCmdLine, &argCount);
+
+	// If arguments
+	if (szArgList && argCount)
+	{
+		for (int i = 0; i < argCount; i++)
+		{
+			if (_wcsicmp(szArgList[i], L"/silent") == 0 || _wcsicmp(szArgList[i], L"/s") == 0 ||
+				_wcsicmp(szArgList[i], L"-silent") == 0 || _wcsicmp(szArgList[i], L"-s") == 0)
+			{
+				RunSilently = true;
+			}
+			else if (PathFileExists(szArgList[i]))
+			{
+				wcscpy_s(OverridePath, MAX_PATH, szArgList[i]);
+			}
+		}
+	}
+	LocalFree(szArgList);
 }
 
 BOOL CenterWindow(HWND hwndWindow)
@@ -140,17 +190,25 @@ bool ReadRegistryStruct(const std::wstring& lpzSection, const std::wstring& lpzK
 void LoadSettings()
 {
 	WINDOWPLACEMENT wndpl;
-
 	if (ReadRegistryStruct(L"NeuEncrypt", L"WindowPlacement", &wndpl, sizeof(WINDOWPLACEMENT)))
 	{
 		wndpl.length = sizeof(WINDOWPLACEMENT);
 		SetWindowPlacement(hwDlg, &wndpl);
 	}
 
-	wchar_t path[MAX_PATH];
-	if (ReadRegistryStruct(L"NeuEncrypt", L"LastEncryptFolder", (LPVOID)path, MAX_PATH))
+	if (wcslen(OverridePath))
 	{
-		UpdateEncryptFolder(path);
+		SetEncryptFolder(OverridePath);
+		SetEncryptFolderText();
+	}
+	else
+	{
+		wchar_t path[MAX_PATH];
+		if (ReadRegistryStruct(L"NeuEncrypt", L"LastEncryptFolder", (LPVOID)path, MAX_PATH))
+		{
+			SetEncryptFolder(path);
+			SetEncryptFolderText();
+		}
 	}
 }
 
@@ -240,7 +298,8 @@ void OpenDialog()
 
 	if (folder_name)
 	{
-		UpdateEncryptFolder(folder_name);
+		SetEncryptFolder(folder_name);
+		SetEncryptFolderText();
 		SetButtonStatus();
 		CoTaskMemFree(folder_name);
 		folder_name = nullptr;
@@ -289,12 +348,19 @@ INT_PTR CALLBACK NeuBox(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			OpenDialog();
 			break;
 		case IDENCRYPT:
-			// Do encrypt
-			EncryptFiles();
+			if (MessageBox(hwDlg, std::wstring(L"This will encrypt folder '" + std::wstring(GetEncryptFolder()) + L"'.\n\nAre you sure you want to encrypt this folder?").c_str(), L"NeuEncrypt Confirmation", MB_OKCANCEL) == IDOK)
+			{
+				// Do encrypt
+				EncryptFiles();
+				// Update GUI buttons
+				SetButtonStatus();
+			}
 			break;
 		case IDDECRYPT:
 			// Do decrypt
 			DecryptFiles();
+			// Update GUI buttons
+			SetButtonStatus();
 			break;
 		}
         break;
