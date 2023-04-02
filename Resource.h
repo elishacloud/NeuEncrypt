@@ -23,7 +23,7 @@
 // Main resource file details
 #define APP_NAME				"NeuEncrypt"
 #define APP_MAJOR				1
-#define APP_MINOR				2
+#define APP_MINOR				3
 #define APP_BUILDNUMBER			0
 #define APP_REVISION			0
 #define APP_COMPANYNAME			"NeuShield Inc."

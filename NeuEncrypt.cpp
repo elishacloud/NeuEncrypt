@@ -77,6 +77,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 void GetArgumentOptions(LPCWSTR lpCmdLine)
 {
+	// Error checking
+	if (!lpCmdLine || wcslen(lpCmdLine) == 0)
+	{
+		return;
+	}
+
 	// Retrieve command line arguments
 	LPWSTR* szArgList;
 	int argCount;
@@ -177,7 +183,7 @@ bool ReadRegistryStruct(const std::wstring& lpzSection, const std::wstring& lpzK
 
 	hr = RegQueryValueEx(hKey, lpzKey.c_str(), 0, 0, (BYTE*)lpStruct, &DataSize);
 
-	if (FAILED(hr) || !DataSize)
+	if (FAILED(hr) || DataSize == 0)
 	{
 		return false;
 	}
@@ -204,7 +210,7 @@ void LoadSettings()
 	else
 	{
 		wchar_t path[MAX_PATH];
-		if (ReadRegistryStruct(L"NeuEncrypt", L"LastEncryptFolder", (LPVOID)path, MAX_PATH))
+		if (ReadRegistryStruct(L"NeuEncrypt", L"LastEncryptFolder", (LPVOID)path, MAX_PATH * sizeof(wchar_t)))
 		{
 			SetEncryptFolder(path);
 			SetEncryptFolderText();
@@ -220,7 +226,7 @@ void SaveSettings()
 
 	WriteRegistryStruct(L"NeuEncrypt", L"WindowPlacement", &wndpl, sizeof(WINDOWPLACEMENT));
 
-	WriteRegistryStruct(L"NeuEncrypt", L"LastEncryptFolder", (LPVOID)GetEncryptFolder(), MAX_PATH);
+	WriteRegistryStruct(L"NeuEncrypt", L"LastEncryptFolder", (LPVOID)GetEncryptFolder(), (wcslen(GetEncryptFolder()) + 1) * sizeof(wchar_t));
 }
 
 void SetEncryptFolderText()

